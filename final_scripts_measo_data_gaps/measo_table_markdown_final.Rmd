@@ -1,0 +1,266 @@
+---
+title: "MEASO Open biodiversity data gap analysis"
+subtitle: "Results"
+date: "`r format(Sys.time(), '%a %d %b %Y')`"
+# author: "Anne-Sophie Bonnet-Lebrun"
+output:
+  pdf_document:
+  always_allow_html: true
+  # html_document:
+  fig_caption: yes
+---
+
+```{r setup, include=FALSE}
+
+library(knitr)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+inline_hook <- function(x) {
+  if (is.numeric(x)) {
+    formatted <- format(x, big.mark = ",")
+  } else {
+    formatted <- x
+  }
+  return(formatted)
+}
+
+knit_hooks$set(inline = inline_hook)
+
+```
+
+```{r initiate_environment, echo=FALSE, warning=FALSE, message=FALSE}
+library(tidyverse)
+# library(worms)
+# library(worrms)
+library(knitr)
+library(data.table)
+
+# https://github.com/AustralianAntarcticDivision/SOmap
+# remotes::install_github("AustralianAntarcticDivision/SOmap")
+library(SOmap)
+# library(ggalluvial)
+library(ggnewscale)
+library(ggpubr)
+library(cowplot)
+library(patchwork)
+library(sf)
+
+
+```
+
+```{r, groups}
+
+data_dir <- "../../data/"
+results_dir <- "../../results/"
+
+all_measo <- fread(paste0(data_dir, "edited/all_measo_land_worms_date_dupli.csv") )
+all_measo_wd <- data.table::fread(paste0(data_dir, "edited/all_measo_wd_land_worms_date_dupli_focalgps_cells.csv"))
+
+all_measo_wd <-  
+  all_measo_wd %>% 
+  dplyr::mutate(invertebrates = (kingdom == "Animalia" & phylum_worms != "vertebrates"))
+
+```
+
+
+
+```{r, table1}
+
+table1_pEBV <- data.frame(
+  Variable = c(
+    "Essential Biodiversity Variables (EBVs)",
+    "Species population EBVs",
+    "Species distribution",
+    "Species abundance"
+  ),
+  Definition = c(
+    "source: GeoBON",
+    "",
+    "The species occurrence probability over contiguous spatial and temporal units addressing the global extent of a species group.",
+    "Predicted count of individuals over contiguous spatial and temporal units addressing the global extent of a species group."
+  ),
+  RequiredQuantity = c(
+    "",
+    "",
+    "Geo-referenced presences that can be used in species distribution models.",
+    "Reliable abundance data (here in the organismQuantity and organismQuantityType fields, potentially in the individualCount field)."
+  ),
+  Availability = c(
+    "",
+    "",
+    paste0(
+      "Available, but species distribution models would need to take spatial and temporal sampling biases into account. Only ",
+      round(sum(!all_measo$QC_notAbsent, na.rm = TRUE) / nrow(all_measo) * 100, 2),
+      " % of all OBIS-GBIF records for the region are absence data."
+    ),
+    paste0(
+      "Only ",
+      round(sum(!is.na(all_measo_wd$organismQuantity) & !is.na(all_measo_wd$organismQuantityType)) / nrow(all_measo_wd) * 100, 2),
+      " % records (",
+      round(sum(!is.na(all_measo_wd$organismQuantity) & !is.na(all_measo_wd$organismQuantityType) & all_measo_wd$QC_basisOfRecord == "human") / sum(all_measo_wd$QC_basisOfRecord == "human") * 100, 2),
+      " % when considering only human observations) may be considered trustworthy abundance data (defined by the organismQuantity and organismQuantityType  field explicitly mentioning unit taxa per unit space and/or time). ",
+      round(sum(!is.na(all_measo_wd$individualCount)) / nrow(all_measo_wd) * 100, 2),
+      " % of records (",
+      round(sum(!is.na(all_measo_wd$individualCount) & all_measo_wd$QC_basisOfRecord == "human") / sum(all_measo_wd$QC_basisOfRecord == "human") * 100, 2),
+      " % when considering only human observations) have individualCount provided, but without information on the area sampled."
+    )
+  )
+)
+
+
+
+table1_cEBV <- data.frame(
+  Variable = c(
+    "Community composition EBVs",
+    "Community abundance",
+    "Taxonomic/phylogenetic diversity",
+    "Trait diversity",
+    "Interaction diversity"
+  ),
+  Definition = c(
+    "",
+    "The abundance of organisms in ecological assemblages.",
+    "The diversity of species identities, and/or phylogenetic positions, of organisms in ecological assemblages.",
+    "The diversity of functional traits of organisms in ecological assemblages.",
+    "The diversity and structure of multi-trophic interactions between organisms in ecological assemblages."
+  ),
+  RequiredQuantity = c(
+    "",
+    "Reliable abundance data (if communities are assumed to be homogeneous over a certain area and time period).",
+    "Geo-referenced presences and  phylogenies that can be matched based on taxonomic names.",
+    "Geo-referenced presences and a trait database that can be matched based on taxonomic names.",
+    "Geo-referenced presences and an interaction database that can be matched based on taxonomic names."
+  ),
+  Availability = c(
+    "",
+    "See EBV2 for data on abundance in OBIS-GBIF.",
+    "Geo-referenced presences available in OBIS-GBIF, providing biases are taken into account. Phylogenetic information not available in OBIS-GBIF - need for external phylogenetic database(s).", 
+    "Geo-referenced presences available in OBIS-GBIF, providing biases are taken into account. Trait information not available in OBIS-GBIF - need for external functional traits database(s).",
+     "Geo-referenced presences available in OBIS-GBIF, providing biases are taken into account. Interaction information not available in OBIS-GBIF - need for external interactions database(s)."
+    )
+)
+
+
+table1_eEBV <- data.frame(
+  Variable = c(
+    "Ecosystem structure EBVs",
+    "Live cover fraction",
+    "Ecosystem distribution",
+    "Ecosystem vertical profile"
+  ),
+  Definition = c(
+    "",
+    "The horizontal (or projected) fraction of area covered by living organisms, such as vegetation, macroalgae or live hard coral.",
+    "The horizontal distribution of discrete ecosystem units.",
+    "The vertical distribution of biomass in ecosystems, above and below the land surface."
+  ),
+  RequiredQuantity = c(
+    "",
+    "Data on cover.",
+    "",
+    "Depth information related to geo-referenced presences."
+  ),
+  Availability = c(
+    "",
+    "Not available from OBIS/GBIF",
+    "",
+    paste0(
+      "Depth information only available for ",
+      round(sum(!is.na(all_measo_wd$depth)) / nrow(all_measo_wd) * 100, 2),
+      " % of the dataset, skewed towards shallow depths (",
+      round(sum(between(all_measo_wd$depth, 0, 10), na.rm = T) / sum(!is.na(all_measo_wd$depth)) * 100, 2),
+      " % of the records with depth information in the top 10 meters of the ocean). Of these records with depth information, ",
+      round(sum(between(all_measo_wd$depth, 0, 50), na.rm = T) / sum(!is.na(all_measo_wd$depth)) * 100, 2),
+      " % have a measure of biomass (organismQuantity(Type) fields)."
+    )
+  )
+)
+
+
+
+table1_EOV <- data.frame(
+  Variable = c(
+    "Essential Ocean Variables (EOVs)",
+    "Phytoplankton biomass and diversity",
+    "Zooplankton biomass and diversity",
+    "Fish abundance and distribution",
+    "Marine turtles, birds and mammals abundance and distribution",
+    "Microbe biomass and diversity (emerging)",
+    "Invertebrate abundance and distribution (emerging)",
+    "Seagrass cover and composition",
+    "Macroalgal canopy cover and composition"
+  ),
+  Definition = c("source: GOOS", rep("", 8)),
+  RequiredQuantity = c(
+    "",
+    "Geo-referenced presences and reliable abundance data (in the organismsQuantity(Type) fields, potentially in the individualCount field",
+    rep("=", 5),
+    "Data on cover and representative geo-referenced presences to estimate composition.",
+    "="
+  ),
+  Availability = c(
+    "",
+    paste0(
+      sum(all_measo_wd$phytoplankton, na.rm = TRUE),
+      " (",
+      round(sum(all_measo_wd$phytoplankton, na.rm = TRUE) / nrow(all_measo_wd) * 100, 2),
+     " % of total) records for phytoplankton (based on functional groups from WoRMS), of which ",
+      round(sum(all_measo_wd$phytoplankton & !is.na(all_measo_wd$organismQuantity) & !is.na(all_measo_wd$organismQuantityType), na.rm = TRUE) / sum(all_measo_wd$phytoplankton, na.rm = TRUE) * 100, 2),
+      " % contain info in the organismQuantity(Type) fields and ",
+      round(sum(all_measo_wd$phytoplankton & !is.na(all_measo_wd$individualCount), na.rm = TRUE) / sum(all_measo_wd$phytoplankton, na.rm = TRUE) * 100, 2),
+      " % in the individualCount field."
+    ),
+    paste0(
+      sum(all_measo_wd$zooplankton, na.rm = TRUE),
+      " (",
+      round(sum(all_measo_wd$zooplankton, na.rm = TRUE) / nrow(all_measo_wd) * 100, 2),
+     " % of total) records for zooplankton (based on functional groups from WoRMS), of which ",
+      round(sum(all_measo_wd$zooplankton & !is.na(all_measo_wd$organismQuantity) & !is.na(all_measo_wd$organismQuantityType), na.rm = TRUE) / sum(all_measo_wd$zooplankton, na.rm = TRUE) * 100, 2),
+      " % contain info in the organismQuantity(Type) fields and ",
+      round(sum(all_measo_wd$zooplankton & !is.na(all_measo_wd$individualCount), na.rm = TRUE) / sum(all_measo_wd$zooplankton, na.rm = TRUE) * 100, 2),
+      " % in the individualCount field."
+    ),
+    paste0(
+      sum(all_measo_wd$focalGroup == "Pisces", na.rm = TRUE),
+      " (",
+      round(sum(all_measo_wd$focalGroup == "Pisces", na.rm = TRUE) / nrow(all_measo_wd) * 100, 2),
+      " % of total) records for fish (defined as in Table S1), of which ",
+      round(sum(all_measo_wd$focalGroup == "Pisces" & !is.na(all_measo_wd$organismQuantity) & !is.na(all_measo_wd$organismQuantityType), na.rm = TRUE) / sum(all_measo_wd$focalGroup == "Pisces", na.rm = TRUE) * 100, 2),
+      " % contain info in the organismQuantity(Type) fields and ",
+      round(sum(all_measo_wd$focalGroup == "Pisces" & !is.na(all_measo_wd$individualCount), na.rm = TRUE) / sum(all_measo_wd$focalGroup == "Pisces", na.rm = TRUE) * 100, 2),
+      " % in the individualCount field."
+    ),
+    paste0(
+      sum(all_measo_wd$focalGroup == "Birds and Mammals", na.rm = TRUE),
+      " (",
+      round(sum(all_measo_wd$focalGroup == "Birds and Mammals", na.rm = TRUE) / nrow(all_measo_wd) * 100, 2),
+      "% of total) records for birds, and mammals (defined as in Table S1), of which ",
+      round(sum(all_measo_wd$focalGroup == "Birds and Mammals" & !is.na(all_measo_wd$organismQuantity) & !is.na(all_measo_wd$organismQuantityType), na.rm = TRUE) / sum(all_measo_wd$focalGroup == "Birds and Mammals", na.rm = TRUE) * 100, 2),
+      " % contain info in the organismQuantity(Type) fields and ",
+      round(sum(all_measo_wd$focalGroup == "Birds and Mammals" & !is.na(all_measo_wd$individualCount), na.rm = TRUE) / sum(all_measo_wd$focalGroup == "Birds and Mammals", na.rm = TRUE) * 100, 2),
+      " % in the individualCount field."
+    ),
+    "No clear taxonomic definition of microbes to estimate amount of available data.",
+    paste0(
+      sum(all_measo_wd$invertebrates, na.rm = TRUE),
+      " (",
+      round(sum(all_measo_wd$invertebrates, na.rm = TRUE) / nrow(all_measo_wd) * 100, 2),
+     " % of total) records for invertebrates (defined here as the kindgom Animalia minus the phylum vertebrates), of which ",
+      round(sum(all_measo_wd$invertebrates & !is.na(all_measo_wd$organismQuantity) & !is.na(all_measo_wd$organismQuantityType), na.rm = TRUE) / sum(all_measo_wd$invertebrates, na.rm = TRUE) * 100, 2),
+      " % contain info in the organismQuantity(Type) fields and ",
+      round(sum(all_measo_wd$invertebrates & !is.na(all_measo_wd$individualCount), na.rm = TRUE) / sum(all_measo_wd$invertebrates, na.rm = TRUE) * 100, 2),
+      " % in the individualCount field."
+    ),
+    "Data on cover not available from OBIS/GBIF; seagrasses absent from the Southern Ocean (0% of the data in the families Zosteraceae, Hydrocharitaceae, Posidoniaceae or Cymodoceaceae).",
+    "Data on cover not available from OBIS/GBIF; no clear taxonomic definition of macroalgae to estimate amount of available data."
+  )
+)
+
+
+table1 <- rbind(table1_pEBV, table1_cEBV, table1_eEBV, table1_EOV)
+
+write.table(table1, paste0(results_dir, "table1.txt"))
+
+knitr::kable(table1)
+```
+
