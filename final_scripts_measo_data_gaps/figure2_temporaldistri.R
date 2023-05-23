@@ -1,4 +1,4 @@
-measo_fig2 <- function(all_measo_wd) {
+measo_fig2 <- function(all_measo_wd, dna_reads = FALSE) {
   major_expe <- data.frame(
     expedition = c(
       "Discovery", # Investigations",
@@ -78,7 +78,12 @@ measo_fig2 <- function(all_measo_wd) {
     ncol = 1, labels = c("A", "B")
   )
 
-  ggsave(paste0(fig_dir, "fig2_temporal_distri.png"), p, height = 6, width = 9)
-
+  
+  if (dna_reads) {
+    ggsave(paste0(fig_dir, "figS_temporal_distri_dna.png"), p, height = 6, width = 9)
+  } else {
+    ggsave(paste0(fig_dir, "fig2_temporal_distri.png"), p, height = 6, width = 9)
+  }
+  
   return(p)
 }
