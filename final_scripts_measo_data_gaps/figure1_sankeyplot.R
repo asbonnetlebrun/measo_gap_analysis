@@ -25,14 +25,8 @@ measo_fig1 <- function(all_measo, fig_name) {
                                        QC_duplicatesCat_taxCheck,
                                        paste("OBIS-GBIF", QC_duplicatesCat_taxCheck)
     ),
-    QC_duplicatesIntraCat_taxCheck = ifelse(!is.na(QC_trueDuplicatesIntra),
-                                            ifelse(QC_trueDuplicatesIntra == TRUE,
-                                                   "true duplicates",
-                                                   ifelse(QC_potentialDuplicatesIntra_taxCheck == TRUE,
-                                                          "potential duplicates",
-                                                          "I unique"
-                                                   )
-                                            ),
+    QC_duplicatesIntraCat_taxCheck = ifelse(QC_potentialDuplicatesIntra_taxCheck == TRUE,
+                                            "potential duplicates",
                                             "I unique"
     ),
     QC_basisOfRecord = ifelse(is.na(QC_basisOfRecord) | QC_basisOfRecord == "fossil",
@@ -69,10 +63,8 @@ measo_fig1 <- function(all_measo, fig_name) {
       str_replace("QC_date==conflicting", "conflicting date") %>% # separate the date info
       str_replace("QC_duplicatesIntraCat_taxCheck==I unique", "I unique records") %>%
       str_replace("QC_duplicatesIntraCat_taxCheck==potential duplicates", "potential duplicates") %>%
-      str_replace("QC_duplicatesIntraCat_taxCheck==true duplicates", "true duplicates") %>%
       str_replace("QC_duplicatesCat_taxCheck==OBIS-GBIF unique", "OBIS-GBIF unique records") %>%
       str_replace("QC_duplicatesCat_taxCheck==OBIS-GBIF potential duplicates", "OBIS-GBIF pot. dupli.") %>%
-      str_replace("QC_duplicatesCat_taxCheck==OBIS-GBIF true duplicates", "OBIS-GBIF true dupli.") %>%
       str_replace("QC_notAbsent==TRUE", "presences") %>%
       str_replace("QC_notAbsent==FALSE", "absences") %>%
       str_replace("QC_basisOfRecord==human", "human obs.") %>%
