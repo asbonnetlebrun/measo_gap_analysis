@@ -44,10 +44,14 @@ nb_records_per_gp_fn <- function(all_measo_wd) {
 
 # Figure 5 ---------------------------------------------------------
 
-measo_fig5 <- function(all_measo_wd) {
+measo_fig5 <- function(all_measo_wd, dna_reads = FALSE) {
 
   # Stats per group ---------------------------------------------------------
 
+  all_measo_wd$benthic_pelagic = ifelse(all_measo_wd$benthic_pelagic %in% c("Benthic", "Pelagic"),
+                                        all_measo_wd$benthic_pelagic,
+                                        NA) # only keep benthic/pelagic info for those taxa with unambiguous matching
+  
   ## focal groups
   nb_records_per_gp <- nb_records_per_gp_fn(all_measo_wd)
 
@@ -144,7 +148,12 @@ measo_fig5 <- function(all_measo_wd) {
 
   p <- cowplot::plot_grid(plot_rec, plot_spat, ncol = 2, labels = c("A", "B"))
 
-  ggsave(paste0(fig_dir, "fig5_coverage.png"), width = 9, height = 5)
+  if(!dna_reads) {
+    ggsave(paste0(fig_dir, "fig5_coverage.png"), plot = p, width = 9, height = 5)
+  } else {
+    ggsave(paste0(fig_dir, "figS_coverage_dna.png"), plot = p, width = 9, height = 5)
+  }
+
 
   return(p)
 }
