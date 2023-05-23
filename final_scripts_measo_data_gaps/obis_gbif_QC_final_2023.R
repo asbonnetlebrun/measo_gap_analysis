@@ -73,7 +73,7 @@ if (TRUE) {
         occurrenceStatus, taxonRank,
         species, kingdom, phylum, class, genus, family, order, # subgenus,
         basisOfRecord, datasetName,
-        eventID, datasetID
+        eventID, datasetID, samplingProtocol
       ) %>%
       return()
   }
@@ -354,20 +354,6 @@ if (TRUE) {
   all_measo <- all_measo %>%
     mutate(QC_hasOccurrenceID = !is.na(occurrenceID))
 
-  # True duplicates --------------------------------------------------------------
-
-  # Across both databases
-  all_measo$QC_trueDuplicates <- duplicated(all_measo[, c("occurrenceID", "scientificName")])
-  all_measo$QC_trueDuplicates[!all_measo$QC_hasOccurrenceID] <- NA
-
-  # Between databases
-  all_measo$QC_trueDuplicatesIntra <- logical(nrow(all_measo))
-  # Internal to OBIS
-  all_measo$QC_trueDuplicatesIntra[all_measo$QC_database == "OBIS"] <- duplicated(all_measo[all_measo$QC_database == "OBIS", c("occurrenceID", "scientificName")])
-  # Internal to GBIF
-  all_measo$QC_trueDuplicatesIntra[all_measo$QC_database == "GBIF"] <- duplicated(all_measo[all_measo$QC_database == "GBIF", c("occurrenceID", "scientificName")])
-  all_measo$QC_trueDuplicatesIntra[!all_measo$QC_hasOccurrenceID] <- NA
-
   # Potential duplicates ----------------------------------------------------
 
   dec_pres <- 4 # precision for rounding decimal coordinates
@@ -397,7 +383,7 @@ if (TRUE) {
 
   all_measo$QC_duplicatesCat_taxCheck <- "unique"
   all_measo$QC_duplicatesCat_taxCheck[all_measo$QC_potentialDuplicates_taxCheck == TRUE] <- "potential duplicates"
-  all_measo$QC_duplicatesCat_taxCheck[all_measo$QC_trueDuplicates == TRUE] <- "true duplicates"
+  # all_measo$QC_duplicatesCat_taxCheck[all_measo$QC_trueDuplicates == TRUE] <- "true duplicates"
 
   ## split basisOfRecord
   all_measo <- all_measo %>%
