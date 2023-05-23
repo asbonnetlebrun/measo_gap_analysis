@@ -75,20 +75,22 @@ fig2 <- measo_fig2(all_measo_wd)
 my_colors = terrain.colors(80, rev = TRUE)
 ## Human observations
 rr <- obs2raster(all_measo_wd %>% filter(QC_basisOfRecord == "human"), eagrid)
-png(paste0(fig_dir, "fig3A_map_n_human.png"))
+png(paste0(fig_dir, "fig3A_map_n_human.png"),
+    width = 1.2*480, height = 1.2*480)
 SOmap(trim = -30)
 SOplot(log10(rr), legend = FALSE, col = my_colors)
 SOleg(log10(rr), position = "topright", col = my_colors,
-      breaks = seq(0,4,1), tcex = 0.8,
+      breaks = seq(0,4,1), tcex = 1.5,
       trim = -30, label = "log10(number of\nobservations)", type = "continuous")
 dev.off()
 ## Machine observations
 rr <- obs2raster(all_measo_wd %>% filter(QC_basisOfRecord == "machine"), eagrid)
-png(paste0(fig_dir, "fig3B_map_n_machine.png"))
+png(paste0(fig_dir, "fig3B_map_n_machine.png"),
+    width = 1.2*480, height = 1.2*480)
 SOmap(trim = -30)
 SOplot(log10(rr), legend = FALSE, col = my_colors)
 SOleg(log10(rr), position = "topright", col = my_colors, 
-      breaks = seq(0,4,1), tcex = 0.8,
+      breaks = seq(0,4,1), tcex = 1.5,
       trim = -30, label = "log10(number of\nobservations)", type = "continuous")
 dev.off()
 
@@ -98,7 +100,7 @@ dev.off()
 source("figure4_supplfigure3_measomap.R")
 
 fig4 <- measo_fig4_figS3(all_measo_wd %>% filter(QC_basisOfRecord == "human"))
-ggsave(paste0(fig_dir, "fig4_measo_temporal_human.png"), fig4, height = 7, width = 7)
+ggsave(paste0(fig_dir, "fig4_measo_temporal_human.png"), fig4, height = 7, width = 7, dpi = 300)
 
 figS3 <- measo_fig4_figS3(all_measo_wd %>% filter(QC_basisOfRecord == "machine"))
 ggsave(paste0(fig_dir, "figS3_measo_temporal_machine.png"), figS3, height = 7, width = 7)
@@ -131,6 +133,32 @@ figS2 <- measo_figS2(all_measo_wd, ice_min, ice_max, eagrid)
 source("supplfigures4&5_phylatime_taxodepth.R")
 figS4 <- measo_figS4(all_measo_wd)
 figS5 <- measo_figS5(all_measo_wd)
+
+
+
+# Supplementary figure 1 -------------------------------------------------------
+
+# % of data that are DNA reads
+sum(all_measo_wd$organismQuantityType == "DNAsequencereads", na.rm=TRUE)/nrow(all_measo_wd)*100
+
+# % of DNA reads identified at the species level
+sum(all_measo_wd$organismQuantityType == "DNAsequencereads" & !is.na(all_measo_wd$species_final), na.rm=TRUE)/sum(all_measo_wd$organismQuantityType == "DNAsequencereads", na.rm=TRUE)*100
+
+# % of all data identified at the species level
+sum(!is.na(all_measo_wd$species_final))/nrow(all_measo_wd)*100
+
+# DNA reads spatial distribution
+rr <- obs2raster(all_measo_wd %>% filter(organismQuantityType == "DNAsequencereads"), eagrid)
+png(paste0(fig_dir, "figS_map_n_dna.png"), width = 700, height = 700, units = "px")
+SOmap(trim = -30)
+SOplot(log10(rr), legend = FALSE, col = my_colors)
+SOleg(log10(rr), position = "topright", col = my_colors,
+      breaks = seq(0,4,1), tcex = 0.8,
+      trim = -30, label = "log10(number of\nobservations)", type = "continuous")
+dev.off()
+
+source("figure_supp_dna_reads.R")
+figS <- measo_figS_dna(all_measo_wd %>% filter(organismQuantityType == "DNAsequencereads"))
 
 
 
